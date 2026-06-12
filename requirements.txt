@@ -1,0 +1,7 @@
+flask
+playwright
+ddgs
+pypdf
+comtradeapicall
+beautifulsoup4
+lxml

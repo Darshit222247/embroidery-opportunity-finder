@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embroidery Opportunity Finder</title>
+<style>
+  :root {
+    --bg: #f5f5f2; --surface: #ffffff; --border: #e3e3dd; --text: #1a1a1a;
+    --muted: #6b6b66; --accent: #185FA5; --gov: #185FA5; --corp: #534AB7; --export: #3B6D11;
+    --green: #27500A; --amber: #854F0B; --red: #A32D2D;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; position: sticky; top: 0; z-index: 10; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 500; }
+  h1 small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+  .tabs { display: flex; gap: 4px; }
+  .tab { padding: 7px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; color: var(--muted); border: none; background: none; font-size: 14px; }
+  .tab.active { background: var(--bg); color: var(--text); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
+
+  .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .metric .num { font-size: 24px; font-weight: 500; }
+  .metric .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  input[type=text], select { height: 36px; border: 1px solid var(--border); border-radius: 8px; padding: 0 12px; font-size: 14px; background: var(--surface); }
+  input[type=text] { flex: 1; min-width: 200px; }
+  button.run { height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; font-size: 13px; font-weight: 500; }
+  button.run:hover { background: var(--bg); }
+  button.run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+  .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .badge { font-size: 11px; font-weight: 500; padding: 2px 9px; border-radius: 6px; }
+  .b-gov { background: #E6F1FB; color: var(--gov); }
+  .b-corp { background: #EEEDFE; color: var(--corp); }
+  .b-export { background: #EAF3DE; color: var(--export); }
+  .score { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: var(--bg); color: var(--muted); }
+  .score.hi { background: #EAF3DE; color: var(--green); }
+  .score.mid { background: #FAEEDA; color: var(--amber); }
+  .src { font-size: 12px; color: var(--muted); }
+  .dl { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px; }
+  .dl-soon { background: #FCEBEB; color: var(--red); }
+  .dl-ok { background: #EAF3DE; color: var(--green); }
+  .dl-exp { background: #F1EFE8; color: #888; }
+  .elig { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px; }
+  .elig-yes { background: #EAF3DE; color: var(--green); }
+  .elig-no { background: #FCEBEB; color: var(--red); }
+
+  @media (max-width: 640px) {
+    header { padding: 12px 14px; }
+    h1 { font-size: 17px; }
+    h1 small { display: block; margin: 2px 0 0; }
+    .container { padding: 14px; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .toolbar { gap: 6px; }
+    input[type=text], select { font-size: 13px; }
+    .card { padding: 13px 14px; }
+    .detail-tbl td:first-child { width: 90px; }
+  }
+  .title { font-size: 15px; font-weight: 500; margin: 4px 0; }
+  .summary { font-size: 13px; color: #444; line-height: 1.5; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 8px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .action { font-size: 13px; color: var(--green); margin-top: 6px; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .status-pills { display: flex; gap: 6px; }
+  .pill { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--muted); }
+  .pill.active-interested { background: #E6F1FB; color: var(--gov); border-color: var(--gov); }
+  .pill.active-applied { background: #FAEEDA; color: var(--amber); border-color: var(--amber); }
+  .pill.active-won { background: #EAF3DE; color: var(--green); border-color: var(--green); }
+  .pill.active-rejected { background: #FCEBEB; color: var(--red); border-color: var(--red); }
+
+  .empty { text-align: center; color: var(--muted); padding: 60px 20px; }
+
+  .detail { margin-top: 10px; background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+  .detail-head { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+  .emb-yes { color: var(--green); font-weight: 500; margin-left: 6px; }
+  .emb-no { color: var(--muted); margin-left: 6px; }
+  .detail-tbl { width: 100%; font-size: 12px; border-collapse: collapse; }
+  .detail-tbl td { padding: 3px 6px; vertical-align: top; border-top: 1px solid var(--border); }
+  .detail-tbl td:first-child { color: var(--muted); width: 110px; white-space: nowrap; }
+
+  /* contacts */
+  .contact-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+  .contact-company { font-size: 15px; font-weight: 500; }
+  .contact-line { font-size: 13px; color: #444; margin-top: 3px; }
+  .contact-line b { color: var(--muted); font-weight: 400; display: inline-block; min-width: 56px; }
+
+  /* run panel */
+  #runlog { display: none; background: #1a1a1a; color: #d4d4d4; font-family: ui-monospace, monospace; font-size: 12px; border-radius: 10px; padding: 14px; margin-bottom: 16px; max-height: 220px; overflow-y: auto; white-space: pre-wrap; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <h1>Embroidery Opportunity Finder <small>Maharashtra · 18 machines</small></h1>
+    <div class="tabs">
+      <button class="tab active" data-tab="opps">Opportunities</button>
+      <button class="tab" data-tab="contacts">Contacts</button>
+      <button class="tab" data-tab="outreach">Outreach</button>
+      <button class="tab" data-tab="markets">Export markets</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="metrics" id="metrics"></div>
+
+  <!-- RUN BUTTONS -->
+  <div class="toolbar">
+    <button class="run" onclick="runTask('full')">⟳ Full run</button>
+    <button class="run" onclick="runTask('scrape')">Scrape</button>
+    <button class="run" onclick="runTask('analyse')">AI analyse</button>
+    <button class="run" onclick="runTask('discover')">Discover</button>
+    <button class="run" onclick="runTask('enrich')">Extract PDF details</button>
+    <button class="run" onclick="runTask('contacts')">Find contacts</button>
+    <button class="run" onclick="runTask('fix-urls')">Validate URLs</button>
+    <button class="run" onclick="window.open('/api/export')">⬇ Export CSV</button>
+    <button class="run" onclick="openSettings()">⚙ My eligibility</button>
+  </div>
+  <div id="runlog"></div>
+
+  <!-- OPPORTUNITIES TAB -->
+  <div id="tab-opps">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Search title, summary, source...">
+      <select id="filter-cat">
+        <option value="">All categories</option>
+        <option value="gov">Government</option>
+        <option value="corp">Corporate</option>
+        <option value="export">Export / B2B</option>
+      </select>
+      <select id="filter-status">
+        <option value="">All statuses</option>
+        <option value="new">New</option>
+        <option value="interested">Interested</option>
+        <option value="applied">Applied</option>
+        <option value="won">Won</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <select id="filter-relevance">
+        <option value="0">Any score</option>
+        <option value="5">Score ≥ 5</option>
+        <option value="7">Score ≥ 7</option>
+        <option value="9">Score ≥ 9</option>
+      </select>
+      <select id="filter-deadline">
+        <option value="hide-expired">Hide expired</option>
+        <option value="live">Live only (has deadline)</option>
+        <option value="soon">Closing ≤ 7 days</option>
+        <option value="all">Show all (incl. expired)</option>
+      </select>
+      <select id="sort">
+        <option value="relevance">Top score</option>
+        <option value="newest">Newest</option>
+        <option value="deadline">Closing soon</option>
+      </select>
+    </div>
+    <div id="opps-list"></div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settings-modal" class="hidden" style="position:relative;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">
+    <div style="font-weight:500;margin-bottom:10px;">My eligibility profile</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Used to auto-flag which tenders you qualify for.</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+      <label style="font-size:13px;">Annual turnover (₹ Lakh)<br><input type="number" id="set-turnover" style="width:130px;margin-top:4px;"></label>
+      <label style="font-size:13px;">MSE / Udyam registered?<br>
+        <select id="set-mse" style="margin-top:4px;"><option value="yes">Yes</option><option value="no">No</option></select></label>
+      <label style="font-size:13px;">Company name<br><input type="text" id="set-company" style="width:170px;margin-top:4px;"></label>
+      <label style="font-size:13px;">Your name<br><input type="text" id="set-sender" style="width:150px;margin-top:4px;"></label>
+      <label style="font-size:13px;">Your phone<br><input type="text" id="set-phone" style="width:150px;margin-top:4px;"></label>
+      <button class="run" onclick="saveSettings()">Save</button>
+      <button class="run" onclick="closeSettings()">Close</button>
+    </div>
+  </div>
+
+  <!-- CONTACTS TAB -->
+  <div id="tab-contacts" class="hidden">
+    <div id="contacts-list"></div>
+  </div>
+
+  <!-- OUTREACH TAB -->
+  <div id="tab-outreach" class="hidden">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+      AI drafts a personalized outreach email for each contact. Review, copy, and send from your own email.
+      Set your name/phone in <b>⚙ My eligibility</b> so drafts are signed correctly.</p>
+    <div id="outreach-list"></div>
+  </div>
+
+  <!-- EXPORT MARKETS TAB -->
+  <div id="tab-markets" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <p style="font-size:13px;color:var(--muted);margin:0;">
+        Which countries import Indian embroidery & apparel, ranked by value (UN Comtrade official data).
+        Target outreach at the biggest markets.</p>
+      <button class="run" onclick="refreshMarkets()">⟳ Refresh from UN Comtrade</button>
+    </div>
+    <div id="markets-list"></div>
+  </div>
+
+</div>
+
+<script>
+let OPPS = [], CONTACTS = [];
+
+async function loadAll() {
+  const [opps, contacts, st, settings] = await Promise.all([
+    fetch('/api/opportunities').then(r => r.json()),
+    fetch('/api/contacts').then(r => r.json()),
+    fetch('/api/stats').then(r => r.json()),
+    fetch('/api/settings').then(r => r.json()).catch(()=>({})),
+  ]);
+  OPPS = opps; CONTACTS = contacts; SETTINGS = settings || {};
+  document.getElementById('set-turnover').value = SETTINGS.turnover_lakh || '';
+  document.getElementById('set-mse').value = SETTINGS.mse || 'yes';
+  document.getElementById('set-company').value = SETTINGS.company_name || '';
+  document.getElementById('set-sender').value = SETTINGS.sender_name || '';
+  document.getElementById('set-phone').value = SETTINGS.sender_phone || '';
+  renderMetrics(st);
+  renderOpps();
+  renderContacts();
+  loadOutreach();
+}
+
+function openSettings(){ document.getElementById('settings-modal').classList.remove('hidden'); }
+function closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
+async function saveSettings(){
+  SETTINGS.turnover_lakh = document.getElementById('set-turnover').value;
+  SETTINGS.mse = document.getElementById('set-mse').value;
+  SETTINGS.company_name = document.getElementById('set-company').value;
+  SETTINGS.sender_name = document.getElementById('set-sender').value;
+  SETTINGS.sender_phone = document.getElementById('set-phone').value;
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(SETTINGS)});
+  closeSettings(); renderOpps();
+}
+
+function renderMetrics(s) {
+  const m = document.getElementById('metrics');
+  m.innerHTML = `
+    <div class="metric"><div class="num">${s.total||0}</div><div class="label">Total leads</div></div>
+    <div class="metric"><div class="num" style="color:var(--gov)">${s.gov||0}</div><div class="label">Government</div></div>
+    <div class="metric"><div class="num" style="color:var(--corp)">${s.corp||0}</div><div class="label">Corporate</div></div>
+    <div class="metric"><div class="num" style="color:var(--export)">${s.export||0}</div><div class="label">Export / B2B</div></div>
+    <div class="metric"><div class="num">${CONTACTS.length}</div><div class="label">Contacts</div></div>`;
+}
+
+// Parse a deadline from pdf_detail.bid_end_date or o.deadline. Returns Date or null.
+function oppDeadline(o) {
+  let s = '';
+  if (o.pdf_detail) { try { s = (JSON.parse(o.pdf_detail).bid_end_date)||''; } catch(e){} }
+  if (!s) s = o.deadline || '';
+  if (!s) return null;
+  s = s.split(' ')[0];
+  let m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);      // DD-MM-YYYY
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);           // YYYY-MM-DD
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  return null;
+}
+function daysLeft(o) {
+  const d = oppDeadline(o); if (!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((d - today) / 86400000);
+}
+function deadlineBadge(o) {
+  const dl = daysLeft(o); if (dl === null) return '';
+  if (dl < 0) return `<span class="dl dl-exp">Expired</span>`;
+  if (dl <= 7) return `<span class="dl dl-soon">${dl}d left</span>`;
+  return `<span class="dl dl-ok">${dl}d left</span>`;
+}
+
+let SETTINGS = {};
+// Parse "15 Lakh (s)" → 15 (lakhs)
+function turnoverLakh(s) {
+  if (!s) return null;
+  const m = String(s).match(/([\d.]+)\s*(lakh|crore)/i);
+  if (!m) return null;
+  let v = parseFloat(m[1]);
+  if (/crore/i.test(m[2])) v *= 100;
+  return v;
+}
+function eligibilityBadge(o) {
+  if (!o.pdf_detail) return '';
+  let d; try { d = JSON.parse(o.pdf_detail); } catch(e){ return ''; }
+  if (!d || d.error) return '';
+  const reqLakh = turnoverLakh(d.min_turnover);
+  const myLakh = parseFloat(SETTINGS.turnover_lakh);
+  const mseRelax = d.mse_relaxation && /yes/i.test(d.mse_relaxation);
+  const iAmMse = (SETTINGS.mse||'yes') === 'yes';
+  if (reqLakh === null) return '';
+  // MSE relaxation waives turnover for MSE-registered bidders
+  if (mseRelax && iAmMse) return `<span class="elig elig-yes">✓ You qualify (MSE)</span>`;
+  if (isNaN(myLakh)) return '';
+  if (myLakh >= reqLakh) return `<span class="elig elig-yes">✓ You qualify</span>`;
+  return `<span class="elig elig-no">✗ Turnover ${reqLakh}L needed</span>`;
+}
+
+function scoreClass(s) { return s >= 7 ? 'hi' : s >= 5 ? 'mid' : ''; }
+function catBadge(c) { return {gov:['b-gov','Government'],corp:['b-corp','Corporate'],export:['b-export','Export']}[c] || ['b-gov',c]; }
+
+function renderOpps() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const cat = document.getElementById('filter-cat').value;
+  const status = document.getElementById('filter-status').value;
+  const minRel = parseInt(document.getElementById('filter-relevance').value);
+  const dlFilter = document.getElementById('filter-deadline').value;
+  const sort = document.getElementById('sort').value;
+
+  let list = OPPS.filter(o => {
+    if (cat && o.category !== cat) return false;
+    if (status && (o.status||'new') !== status) return false;
+    if ((o.relevance||0) < minRel) return false;
+    const dl = daysLeft(o);
+    if (dlFilter === 'hide-expired' && dl !== null && dl < 0) return false;
+    if (dlFilter === 'live' && (dl === null || dl < 0)) return false;   // must have a FUTURE deadline
+    if (dlFilter === 'soon' && (dl === null || dl < 0 || dl > 7)) return false;
+    if (q) {
+      const hay = (o.title+' '+(o.summary||'')+' '+(o.source||'')+' '+(o.snippet||'')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (sort === 'relevance') list.sort((a,b)=>(b.relevance||0)-(a.relevance||0));
+  else if (sort === 'newest') list.sort((a,b)=>(b.scraped_at||'').localeCompare(a.scraped_at||''));
+  else if (sort === 'deadline') list.sort((a,b)=>{
+    const da=a.deadline||'9999', db=b.deadline||'9999'; return da.localeCompare(db);
+  });
+
+  const el = document.getElementById('opps-list');
+  if (!list.length) { el.innerHTML = '<div class="empty">No opportunities match your filters.</div>'; return; }
+
+  el.innerHTML = list.map(o => {
+    const [bc, bl] = catBadge(o.category);
+    const st = o.status || 'new';
+    const pills = ['interested','applied','won','rejected'].map(s =>
+      `<span class="pill ${st===s?'active-'+s:''}" onclick="setStatus(${o.id},'${st===s?'new':s}')">${s[0].toUpperCase()+s.slice(1)}</span>`
+    ).join('');
+    return `<div class="card">
+      <div class="card-top">
+        <span class="badge ${bc}">${bl}</span>
+        <span class="score ${scoreClass(o.relevance)}">${o.relevance||'?'}/10</span>
+        ${deadlineBadge(o)}
+        ${eligibilityBadge(o)}
+        <span class="src">${o.source||''}</span>
+      </div>
+      <div class="title">${esc(o.title)}</div>
+      <div class="summary">${esc(o.summary || o.snippet || '')}</div>
+      ${o.action ? `<div class="action">→ ${esc(o.action)}</div>` : ''}
+      <div class="meta">
+        ${o.deadline ? `<span>📅 ${o.deadline}</span>` : ''}
+        ${o.location ? `<span>📍 ${esc(o.location)}</span>` : ''}
+        ${o.quantity ? `<span># ${esc(o.quantity)}</span>` : ''}
+        ${o.value_inr ? `<span>₹${Number(o.value_inr).toLocaleString('en-IN')}</span>` : ''}
+      </div>
+      ${renderDetail(o)}
+      <div class="card-foot">
+        <a href="${o.url}" target="_blank">Open source ↗</a>
+        <div class="status-pills">${pills}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderContacts() {
+  const el = document.getElementById('contacts-list');
+  if (!CONTACTS.length) { el.innerHTML = '<div class="empty">No contacts yet. Click "Find contacts".</div>'; return; }
+  const byCo = {};
+  CONTACTS.forEach(c => { (byCo[c.company] = byCo[c.company] || []).push(c); });
+  el.innerHTML = Object.entries(byCo).map(([co, list]) => `
+    <div class="contact-card">
+      <div class="contact-company">${esc(co)}${list[0].country?` <span style="font-size:12px;color:var(--muted);font-weight:400;">· ${esc(list[0].country)}</span>`:''}</div>
+      ${list.map(c => `
+        <div style="margin-top:8px;">
+          <div class="contact-line"><b>Role</b> ${esc(c.role||'-')}</div>
+          ${c.email ? `<div class="contact-line"><b>Email</b> <a href="mailto:${c.email}">${esc(c.email)}</a></div>` : ''}
+          ${c.phone ? `<div class="contact-line"><b>Phone</b> ${esc(c.phone)}</div>` : ''}
+          <div class="contact-line"><b>Source</b> <a href="${c.source_url}" target="_blank">${esc((c.source_url||'').slice(0,60))}↗</a></div>
+          ${c.notes ? `<div class="contact-line" style="color:var(--muted)">${esc(c.notes)}</div>` : ''}
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ── Outreach (SDR) tab ──────────────────────────────────────────────
+let OUTREACH = [];
+const SDR_STAGES = ['draft','sent','replied','meeting','won','no'];
+const SDR_LABEL = {draft:'Draft',sent:'Sent',replied:'Replied',meeting:'Meeting',won:'Won',no:'Not interested'};
+
+async function loadOutreach() {
+  OUTREACH = await fetch('/api/outreach').then(r=>r.json()).catch(()=>[]);
+  renderOutreach();
+}
+
+function renderOutreach() {
+  const el = document.getElementById('outreach-list');
+  // pipeline summary
+  const counts = {}; SDR_STAGES.forEach(s=>counts[s]=0);
+  OUTREACH.forEach(o=>counts[o.status]=(counts[o.status]||0)+1);
+  const pipeline = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">${
+    SDR_STAGES.map(s=>`<div style="background:var(--bg);border-radius:8px;padding:8px 14px;font-size:13px;">
+      <b>${counts[s]||0}</b> <span style="color:var(--muted)">${SDR_LABEL[s]}</span></div>`).join('')}</div>`;
+
+  // contacts/leads available to draft for (from contacts + top corporate opps)
+  const targets = [];
+  CONTACTS.forEach(c => targets.push({company:c.company, role:c.role, email:c.email, ref_type:'contact', ref_id:c.id,
+    context:c.notes||''}));
+  OPPS.filter(o=>o.category==='corp' && (o.relevance||0)>=6).slice(0,15).forEach(o =>
+    targets.push({company:o.title.slice(0,50), role:'Procurement', email:'', ref_type:'opportunity', ref_id:o.id,
+      context:o.summary||''}));
+
+  const draftsByRef = {};
+  OUTREACH.forEach(o=>{ draftsByRef[(o.ref_type)+'-'+(o.ref_id)] = o; });
+
+  const cards = targets.map(t => {
+    const key = t.ref_type+'-'+t.ref_id;
+    const draft = draftsByRef[key];
+    const statusPills = SDR_STAGES.map(s=>
+      `<span class="pill ${draft&&draft.status===s?'active-'+(s==='no'?'rejected':s==='won'?'won':s==='replied'||s==='meeting'?'applied':'interested'):''}"
+        onclick="setOutreachStatus(${draft?draft.id:'null'},'${s}')">${SDR_LABEL[s]}</span>`).join('');
+    return `<div class="card">
+      <div class="card-top">
+        <span class="badge b-corp">${esc(t.company)}</span>
+        ${draft?`<span class="score">${SDR_LABEL[draft.status]}</span>`:''}
+        <span class="src">${esc(t.role||'')} ${t.email?'· '+esc(t.email):''}</span>
+      </div>
+      ${draft?`
+        <div style="margin-top:8px;">
+          <input type="text" id="subj-${key}" value="${esc(draft.subject)}" style="width:100%;font-size:13px;font-weight:500;margin-bottom:6px;">
+          <textarea id="body-${key}" style="width:100%;min-height:140px;font-size:13px;font-family:inherit;border:1px solid var(--border);border-radius:8px;padding:10px;box-sizing:border-box;">${esc(draft.body)}</textarea>
+        </div>
+        <div class="card-foot">
+          <div style="display:flex;gap:8px;">
+            <button class="pill" onclick="copyDraft('${key}')">📋 Copy</button>
+            ${t.email?`<button class="pill" onclick="mailtoDraft('${key}','${esc(t.email)}')">✉ Open in email</button>`:''}
+            <button class="pill" onclick="draftFor(${JSON.stringify(t).replace(/"/g,'&quot;')}, ${draft.id})">↻ Redraft</button>
+          </div>
+          <div class="status-pills">${statusPills}</div>
+        </div>`
+      : `<div class="card-foot">
+          <span style="font-size:13px;color:var(--muted)">${esc((t.context||'').slice(0,90))}</span>
+          <button class="pill" onclick='draftFor(${JSON.stringify(t)})'>✨ AI draft email</button>
+        </div>`}
+    </div>`;
+  }).join('');
+  el.innerHTML = pipeline + (cards || '<div class="empty">No contacts/leads yet.</div>');
+}
+
+async function draftFor(t, existingId) {
+  const btn = event.target; btn.disabled=true; btn.textContent='Drafting...';
+  const payload = {...t, id: existingId||undefined};
+  const r = await fetch('/api/outreach/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  await r.json();
+  await loadOutreach();
+}
+async function setOutreachStatus(id, status) {
+  if(!id) return;
+  await fetch('/api/outreach/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+  const o=OUTREACH.find(x=>x.id===id); if(o)o.status=status; renderOutreach();
+}
+function copyDraft(key){
+  const s=document.getElementById('subj-'+key).value, b=document.getElementById('body-'+key).value;
+  navigator.clipboard.writeText('Subject: '+s+'\n\n'+b); alert('Copied to clipboard');
+}
+function mailtoDraft(key,email){
+  const s=document.getElementById('subj-'+key).value, b=document.getElementById('body-'+key).value;
+  window.open(`mailto:${email}?subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`);
+}
+
+// ── Export markets (UN Comtrade) ────────────────────────────────────
+let MARKETS = null;
+async function loadMarkets() {
+  MARKETS = await fetch('/api/export-markets').then(r=>r.json()).catch(()=>({}));
+  renderMarkets();
+}
+function fmtUSD(v){ return '$'+Number(v).toLocaleString('en-US'); }
+function renderMarkets() {
+  const el = document.getElementById('markets-list');
+  if (!MARKETS || !MARKETS.products || !MARKETS.products.length) {
+    el.innerHTML = '<div class="empty">No data yet. Click "Refresh from UN Comtrade" (takes ~20s).</div>';
+    return;
+  }
+  el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">India export data, year ${MARKETS.period}</div>` +
+    MARKETS.products.map(p => {
+      if (p.error) return `<div class="card"><b>${esc(p.label)}</b><div style="color:var(--red);font-size:13px;">${esc(p.error)}</div></div>`;
+      const max = p.top.length ? p.top[0].value_usd : 1;
+      const rows = p.top.map((c,i)=>`
+        <tr>
+          <td style="color:var(--muted);width:28px;">${i+1}</td>
+          <td style="width:150px;">${esc(c.country)}</td>
+          <td style="width:120px;text-align:right;">${fmtUSD(c.value_usd)}</td>
+          <td><div style="background:var(--corp);height:8px;border-radius:4px;width:${Math.max(2,Math.round(c.value_usd/max*100))}%;"></div></td>
+          <td style="width:90px;"><button class="pill" onclick="sendPromptMarket('${esc(c.country)}','${esc(p.label)}')">Find buyers</button></td>
+        </tr>`).join('');
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+          <b>${esc(p.label)}</b>
+          <span style="font-size:13px;color:var(--muted);">Total exports: ${fmtUSD(p.total_usd)}</span>
+        </div>
+        <table style="width:100%;font-size:13px;border-collapse:collapse;">${rows}</table>
+      </div>`;
+    }).join('');
+}
+async function refreshMarkets() {
+  const logEl=document.getElementById('runlog'); logEl.style.display='block'; logEl.textContent='Fetching UN Comtrade...';
+  document.querySelectorAll('button.run').forEach(b=>b.disabled=true);
+  await fetch('/api/export-markets/refresh',{method:'POST'});
+  const poll=setInterval(async()=>{
+    const j=await fetch('/api/job').then(r=>r.json());
+    logEl.textContent=j.log.join('\n'); logEl.scrollTop=logEl.scrollHeight;
+    if(!j.running){ clearInterval(poll); document.querySelectorAll('button.run').forEach(b=>b.disabled=false); loadMarkets(); }
+  },1500);
+}
+async function sendPromptMarket(country, product){
+  const logEl=document.getElementById('runlog'); logEl.style.display='block';
+  logEl.textContent=`Finding buyer companies in ${country}... (~30s)`;
+  document.querySelectorAll('button.run,.pill').forEach(b=>b.disabled=true);
+  const prod = /embroidery/i.test(product) ? 'embroidery' : 'garments';
+  await fetch('/api/find-buyers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country,product:prod})});
+  const poll=setInterval(async()=>{
+    const j=await fetch('/api/job').then(r=>r.json());
+    logEl.textContent=j.log.join('\n'); logEl.scrollTop=logEl.scrollHeight;
+    if(!j.running){ clearInterval(poll); document.querySelectorAll('button.run,.pill').forEach(b=>b.disabled=false);
+      loadAll(); alert('Done — new buyer companies added to the Contacts tab.'); }
+  },1500);
+}
+
+async function setStatus(id, status) {
+  await fetch('/api/status', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, status})});
+  const o = OPPS.find(x => x.id === id); if (o) o.status = status;
+  renderOpps();
+}
+
+let jobPoll = null;
+async function runTask(task) {
+  document.querySelectorAll('button.run').forEach(b => b.disabled = true);
+  const logEl = document.getElementById('runlog');
+  logEl.style.display = 'block'; logEl.textContent = 'Starting...';
+  const r = await fetch('/api/run', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({task})});
+  if (!r.ok) { logEl.textContent = (await r.json()).error; document.querySelectorAll('button.run').forEach(b=>b.disabled=false); return; }
+  jobPoll = setInterval(async () => {
+    const j = await fetch('/api/job').then(r=>r.json());
+    logEl.textContent = j.log.join('\n');
+    logEl.scrollTop = logEl.scrollHeight;
+    if (!j.running) {
+      clearInterval(jobPoll);
+      document.querySelectorAll('button.run').forEach(b => b.disabled = false);
+      loadAll();
+    }
+  }, 1500);
+}
+
+function renderDetail(o) {
+  if (!o.pdf_detail) return '';
+  let d; try { d = JSON.parse(o.pdf_detail); } catch(e){ return ''; }
+  if (!d || d.error) return '';
+  const rows = [
+    ['Quantity', d.total_quantity],
+    ['Item', d.item_category],
+    ['Closes', d.bid_end_date],
+    ['Min turnover', d.min_turnover],
+    ['Experience', d.experience_years],
+    ['EMD', d.emd_amount ? '₹'+Number(d.emd_amount).toLocaleString('en-IN') : ''],
+    ['MSE relaxation', d.mse_relaxation],
+    ['Buyer', [d.ministry, d.organisation].filter(Boolean).join(' / ')],
+    ['Documents', d.documents_required],
+  ].filter(r => r[1]);
+  const emb = d.embroidery_required
+    ? '<span class="emb-yes">✓ Embroidery / monogram mentioned</span>'
+    : '<span class="emb-no">No embroidery keyword in spec</span>';
+  return `<div class="detail">
+    <div class="detail-head">📄 Tender details (from PDF) ${emb}</div>
+    <table class="detail-tbl">${rows.map(r=>`<tr><td>${r[0]}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</table>
+  </div>`;
+}
+
+function esc(s) { return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// tabs
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  const tab = t.dataset.tab;
+  document.getElementById('tab-opps').classList.toggle('hidden', tab!=='opps');
+  document.getElementById('tab-contacts').classList.toggle('hidden', tab!=='contacts');
+  document.getElementById('tab-outreach').classList.toggle('hidden', tab!=='outreach');
+  document.getElementById('tab-markets').classList.toggle('hidden', tab!=='markets');
+  if (tab==='outreach') renderOutreach();
+  if (tab==='markets') { if(!MARKETS) loadMarkets(); else renderMarkets(); }
+});
+
+// filters
+['search','filter-cat','filter-status','filter-relevance','filter-deadline','sort'].forEach(id =>
+  document.getElementById(id).addEventListener('input', renderOpps));
+
+loadAll();
+</script>
+</body>
+</html>

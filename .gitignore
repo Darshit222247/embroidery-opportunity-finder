@@ -1,0 +1,17 @@
+# secrets & data
+.env
+opportunities.db
+*.log
+# binaries / downloads
+cloudflared
+cloudflared.tgz
+Embroidermodder/
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# os
+.DS_Store
+# generated
+opportunities.html
