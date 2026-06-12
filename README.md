@@ -26,7 +26,12 @@ procurement contacts — all in one dashboard, powered by free tools and a local
 - ddgs, pypdf, dirhunt, comtradeapicall — all free / open source
 - No paid APIs required
 
-## Setup
+## Quick start (Mac — no terminal needed)
+
+1. Double-click **`setup.command`** once (installs dependencies).
+2. Double-click **`Start Dashboard.command`** — it launches the app and opens your browser.
+
+## Setup (manual / other OS)
 
 ```bash
 pip install -r requirements.txt
