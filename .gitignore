@@ -15,3 +15,5 @@ venv/
 .DS_Store
 # generated
 opportunities.html
+gh_*/
+gh.zip
